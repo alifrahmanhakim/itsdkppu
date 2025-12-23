@@ -1,7 +1,7 @@
 import React from 'react'
 import { subdirectorates } from '../data/mockData'
 import { motion } from 'framer-motion'
-import { Activity, BookOpen, CheckCircle, Clock, Target, ShieldCheck } from 'lucide-react'
+import { Activity, BookOpen, CheckCircle, Clock, Target, ShieldCheck, ShieldAlert } from 'lucide-react'
 import Gauge from './Gauge'
 
 function Dashboard({ inspectors, onSelectInspector }) {
@@ -13,8 +13,27 @@ function Dashboard({ inspectors, onSelectInspector }) {
         ? Math.round(inspectors.reduce((acc, curr) => acc + curr.stats.ojt, 0) / totalInspectors)
         : 0
 
+    // Outdated Training Logic
+    const currentDate = new Date().toISOString().split('T')[0]
+
+    // Detailed analysis of expired records
+    const expiredDetails = inspectors.reduce((acc, curr) => {
+        const expiredCourses = curr.trainingLog.mandatory.current.filter(t => t.expired < currentDate)
+        if (expiredCourses.length > 0) {
+            acc.push({
+                inspectorId: curr.id,
+                inspectorName: curr.name,
+                expiredCourses
+            })
+        }
+        return acc
+    }, [])
+
+    const outdatedCount = expiredDetails.length
+
     const stats = [
         { label: 'Personnel Active', value: totalInspectors < 10 ? `0${totalInspectors}` : totalInspectors, icon: Activity, color: 'var(--accent-cyan)' },
+        { label: 'Action Required', value: outdatedCount < 10 ? `0${outdatedCount}` : outdatedCount, icon: ShieldAlert, color: 'var(--accent-red)', alert: outdatedCount > 0 },
         { label: 'Pending Approvals', value: '04', icon: Clock, color: 'var(--accent-red)' },
     ]
 
@@ -44,6 +63,74 @@ function Dashboard({ inspectors, onSelectInspector }) {
                 </div>
             </header>
 
+            {/* CRITICAL ALERTS BANNER */}
+            {expiredDetails.length > 0 && (
+                <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    className="glass-card"
+                    style={{
+                        marginBottom: '2rem',
+                        border: '1px solid var(--accent-red)',
+                        background: 'rgba(255, 50, 50, 0.05)',
+                        overflow: 'hidden'
+                    }}
+                >
+                    <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255, 50, 50, 0.2)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <ShieldAlert size={24} color="var(--accent-red)" />
+                        <h2 className="hud-text" style={{ color: 'var(--accent-red)', fontSize: '1rem', letterSpacing: '2px' }}>CRITICAL ACTION REQUIRED // EXPIRED RECORDS DETECTED</h2>
+                    </div>
+                    <div style={{ padding: '0' }}>
+                        {expiredDetails.map((item, idx) => (
+                            <div key={idx} style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                justifyContent: 'space-between',
+                                padding: '1rem 1.5rem',
+                                borderBottom: idx !== expiredDetails.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+                                background: idx % 2 === 0 ? 'rgba(0,0,0,0.1)' : 'transparent'
+                            }}>
+                                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                    <div style={{
+                                        width: '40px', height: '40px', borderRadius: '4px',
+                                        background: 'rgba(255, 50, 50, 0.1)', border: '1px solid var(--accent-red)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: 'var(--accent-red)', fontWeight: 'bold'
+                                    }}>!</div>
+                                    <div>
+                                        <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>{item.inspectorName}</h4>
+                                        <p className="hud-text" style={{ fontSize: '0.65rem', opacity: 0.7 }}>ID: {item.inspectorId}</p>
+                                    </div>
+                                </div>
+                                <div style={{ flex: 1, marginLeft: '2rem' }}>
+                                    {item.expiredCourses.map((course, cIdx) => (
+                                        <div key={cIdx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{course.name}</span>
+                                            <span className="hud-text" style={{ color: 'var(--accent-red)', fontSize: '0.7rem' }}>EXPIRED: {course.expired}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ marginLeft: '1rem' }}>
+                                    <button
+                                        className="hud-btn"
+                                        onClick={() => onSelectInspector({ id: item.inspectorId })} // Assuming we can select by generic object with ID
+                                        style={{
+                                            background: 'rgba(255, 50, 50, 0.2)',
+                                            border: '1px solid var(--accent-red)',
+                                            color: '#fff',
+                                            padding: '6px 12px',
+                                            fontSize: '0.7rem'
+                                        }}
+                                    >
+                                        REVIEW
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </motion.div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '3rem' }}>
                 {/* Instrument Gauges */}
                 <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
@@ -68,11 +155,17 @@ function Dashboard({ inspectors, onSelectInspector }) {
                     {stats.map((stat, index) => {
                         const Icon = stat.icon
                         return (
-                            <div key={index} className="glass-card" style={{ padding: '1.5rem', flex: 1 }}>
+                            <div key={index} className="glass-card" style={{
+                                padding: '1.5rem',
+                                flex: 1,
+                                border: stat.alert ? '1px solid var(--accent-red)' : 'none',
+                                background: stat.alert ? 'rgba(255, 50, 50, 0.05)' : 'rgba(255, 255, 255, 0.05)'
+                            }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
-                                        <p className="hud-text" style={{ fontSize: '0.6rem', marginBottom: '8px' }}>{stat.label}</p>
+                                        <p className="hud-text" style={{ fontSize: '0.6rem', marginBottom: '8px', color: stat.alert ? 'var(--accent-red)' : 'var(--text-dim)' }}>{stat.label}</p>
                                         <h3 style={{ fontSize: '2.5rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: stat.color }}>{stat.value}</h3>
+                                        {stat.alert && <p style={{ fontSize: '0.6rem', color: 'var(--accent-red)', marginTop: '5px' }}>DETAILS ABOVE</p>}
                                     </div>
                                     <Icon size={32} color={stat.color} />
                                 </div>
@@ -127,8 +220,7 @@ function Dashboard({ inspectors, onSelectInspector }) {
                     </div>
                 </div>
             </div>
-        </motion.div>
-    )
+        </motion.div>)
 }
 
 export default Dashboard

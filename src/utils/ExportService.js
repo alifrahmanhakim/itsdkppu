@@ -56,10 +56,10 @@ export const exportInspectorPDF = (inspector) => {
 
     const mandatoryData = inspector.trainingLog.mandatory.current.map(row => [
         row.code,
-        row.name,
-        row.provider,
+        row.fcnName,
+        row.training,
         row.expired,
-        'VALID'
+        row.status.toUpperCase()
     ]);
 
     doc.autoTable({
@@ -79,7 +79,7 @@ export const exportInspectorPDF = (inspector) => {
     doc.text('ADDITIONAL QUALIFICATIONS (NON-MANDATORY)', 15, finalY);
 
     const nonMandatoryData = inspector.trainingLog.nonMandatory.map(row => [
-        row.name,
+        row.course,
         row.provider,
         row.date
     ]);
