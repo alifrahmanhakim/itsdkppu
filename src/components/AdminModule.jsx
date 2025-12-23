@@ -1,0 +1,489 @@
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+    Plus, Trash2, Edit3, Save, X, UserPlus, Database,
+    AlertTriangle, ShieldAlert, Check, XCircle, Clock,
+    FileText, Award, Layers, BookOpen, Trash
+} from 'lucide-react'
+import ConfirmationModal from './ConfirmationModal'
+
+function AdminModule({ inspectors, onUpdateInspectors, pendingSubmissions, onApprove, onReject }) {
+    const [editingId, setEditingId] = useState(null)
+    const [editForm, setEditForm] = useState(null)
+    const [view, setView] = useState('personnel') // personnel, requirements, validation
+    const [editMode, setEditMode] = useState('profile') // profile, records
+
+    // Confirmation Modal State
+    const [confirmState, setConfirmState] = useState({
+        isOpen: false,
+        idToDelete: null,
+        nameToDelete: '',
+        onConfirm: null
+    })
+
+    const handleEdit = (inspector) => {
+        setEditingId(inspector.id)
+        setEditForm(JSON.parse(JSON.stringify(inspector))) // Deep clone
+        setEditMode('profile')
+    }
+
+    const handleSave = () => {
+        const newList = inspectors.map(i => i.id === editingId ? editForm : i)
+        onUpdateInspectors(newList)
+        setEditingId(null)
+        setEditForm(null)
+    }
+
+    const handleDeleteAttempt = (inspector) => {
+        setConfirmState({
+            isOpen: true,
+            idToDelete: inspector.id,
+            nameToDelete: inspector.name,
+            onConfirm: () => {
+                const newList = inspectors.filter(i => i.id !== inspector.id)
+                onUpdateInspectors(newList)
+                setConfirmState({ ...confirmState, isOpen: false })
+            }
+        })
+    }
+
+    const handleAddPersonnel = () => {
+        const newId = `INS-${Math.floor(100 + Math.random() * 900)}`
+        const newInspector = {
+            id: newId,
+            name: 'NEW PERSONNEL',
+            role: 'UNASSIGNED',
+            subdirectorate: 'Operations',
+            workingUnit: 'DKPPU',
+            avatar: 'https://i.pravatar.cc/150?u=' + newId,
+            trainingLog: {
+                mandatory: { current: [], outstanding: [] },
+                nonMandatory: [],
+                ojt: [],
+                authorization: []
+            },
+            stats: { formal: 0, ojt: 0 }
+        }
+        onUpdateInspectors([...inspectors, newInspector])
+        handleEdit(newInspector)
+    }
+
+    // --- Record Management Functions ---
+    const addRecord = (category, subcategory = null) => {
+        const newForm = { ...editForm }
+        if (category === 'mandatory') {
+            const newEntry = { code: 'NEW-FCN', name: 'New Course', provider: 'DGCA', expired: '2026-12-31', status: 'Approved' }
+            newForm.trainingLog.mandatory[subcategory].push(newEntry)
+        } else if (category === 'nonMandatory') {
+            newForm.trainingLog.nonMandatory.push({ name: 'New Course', date: '2024-01-01', provider: 'DGCA' })
+        } else if (category === 'ojt') {
+            newForm.trainingLog.ojt.push({ task: 'New Task', supervisor: 'Admin', status: 'Completed', date: '2024-01-01' })
+        } else if (category === 'authorization') {
+            newForm.trainingLog.authorization.push({ type: 'New Auth', number: 'DGCA/AUTH/000', validUntil: '2026-12-31' })
+        }
+        setEditForm(newForm)
+    }
+
+    const removeRecord = (category, index, subcategory = null) => {
+        const newForm = { ...editForm }
+        if (category === 'mandatory') {
+            newForm.trainingLog.mandatory[subcategory].splice(index, 1)
+        } else {
+            newForm.trainingLog[category].splice(index, 1)
+        }
+        setEditForm(newForm)
+    }
+
+    const updateRecord = (category, index, field, value, subcategory = null) => {
+        const newForm = { ...editForm }
+        if (category === 'mandatory') {
+            newForm.trainingLog.mandatory[subcategory][index][field] = value
+        } else {
+            newForm.trainingLog[category][index][field] = value
+        }
+        setEditForm(newForm)
+    }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ height: '100%' }}
+        >
+            <ConfirmationModal
+                isOpen={confirmState.isOpen}
+                title="Secure Override Protocol"
+                message={`Are you sure you want to PERMANENTLY purge the records for ${confirmState.nameToDelete.toUpperCase()}? This action is IRREVERSIBLE.`}
+                onConfirm={confirmState.onConfirm}
+                onCancel={() => setConfirmState({ ...confirmState, isOpen: false })}
+            />
+
+            <header style={{ marginBottom: '2.5rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <p className="hud-text" style={{ fontSize: '0.7rem', color: 'var(--accent-red)' }}>[ ADMINISTRATIVE OVERRIDE ENABLED ]</p>
+                        <h1 style={{ fontSize: '2.5rem', fontWeight: 800 }}>Maintenance Command</h1>
+                    </div>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                        <button
+                            onClick={() => setView('validation')}
+                            className="hud-text"
+                            style={{
+                                padding: '8px 20px',
+                                background: view === 'validation' ? 'var(--accent-amber)' : 'transparent',
+                                color: view === 'validation' ? '#000' : 'var(--accent-amber)',
+                                border: '1px solid var(--accent-amber)',
+                                cursor: 'pointer',
+                                fontSize: '0.7rem',
+                                position: 'relative'
+                            }}
+                        >
+                            VALIDATION QUEUE
+                            {pendingSubmissions.length > 0 && (
+                                <span style={{ position: 'absolute', top: '-10px', right: '-10px', background: 'var(--accent-red)', color: '#fff', fontSize: '0.5rem', padding: '2px 5px', borderRadius: '2px' }}>
+                                    {pendingSubmissions.length}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setView('personnel')}
+                            className="hud-text"
+                            style={{
+                                padding: '8px 20px',
+                                background: view === 'personnel' ? 'var(--accent-cyan)' : 'transparent',
+                                color: view === 'personnel' ? '#000' : 'var(--accent-cyan)',
+                                border: '1px solid var(--accent-cyan)',
+                                cursor: 'pointer',
+                                fontSize: '0.7rem'
+                            }}
+                        >
+                            PERSONNEL MGR
+                        </button>
+                        <button
+                            onClick={() => setView('requirements')}
+                            className="hud-text"
+                            style={{
+                                padding: '8px 20px',
+                                background: view === 'requirements' ? 'var(--accent-cyan)' : 'transparent',
+                                color: view === 'requirements' ? '#000' : 'var(--accent-cyan)',
+                                border: '1px solid var(--accent-cyan)',
+                                cursor: 'pointer',
+                                fontSize: '0.7rem'
+                            }}
+                        >
+                            REQU-LOG
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {view === 'personnel' && (
+                <div className="glass-card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h2 className="hud-text" style={{ fontSize: '0.9rem' }}>Personnel Registry Database</h2>
+                        <button
+                            onClick={handleAddPersonnel}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: 'var(--accent-emerald)',
+                                border: 'none',
+                                padding: '8px 16px',
+                                color: '#000',
+                                fontWeight: 800,
+                                fontSize: '0.7rem'
+                            }}
+                        >
+                            <UserPlus size={16} /> ADD NEW PERSONNEL
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '20px' }}>
+                        {inspectors.map(inspector => (
+                            <div key={inspector.id} className="technical-border" style={{ padding: '15px', position: 'relative', background: editingId === inspector.id ? 'rgba(0, 212, 255, 0.05)' : 'transparent' }}>
+                                {editingId === inspector.id ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                        {/* Nested Navigation within Editor */}
+                                        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', gap: '20px' }}>
+                                            <button
+                                                onClick={() => setEditMode('profile')}
+                                                className="hud-text"
+                                                style={{ fontSize: '0.6rem', background: 'none', border: 'none', color: editMode === 'profile' ? 'var(--accent-cyan)' : 'var(--text-dim)', cursor: 'pointer' }}
+                                            >
+                                                [ PROFILE DATA ]
+                                            </button>
+                                            <button
+                                                onClick={() => setEditMode('records')}
+                                                className="hud-text"
+                                                style={{ fontSize: '0.6rem', background: 'none', border: 'none', color: editMode === 'records' ? 'var(--accent-cyan)' : 'var(--text-dim)', cursor: 'pointer' }}
+                                            >
+                                                [ TRAINING RECORDS ]
+                                            </button>
+                                        </div>
+
+                                        {editMode === 'profile' ? (
+                                            <>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                                    <div>
+                                                        <label className="hud-text" style={{ fontSize: '0.55rem', color: 'var(--text-dim)' }}>FULL NAME</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editForm.name}
+                                                            onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--accent-cyan)', color: '#fff', padding: '8px', fontSize: '0.8rem' }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="hud-text" style={{ fontSize: '0.55rem', color: 'var(--text-dim)' }}>ID CODE</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editForm.id}
+                                                            onChange={e => setEditForm({ ...editForm, id: e.target.value })}
+                                                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--accent-cyan)', color: '#fff', padding: '8px', fontSize: '0.8rem' }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="hud-text" style={{ fontSize: '0.55rem', color: 'var(--text-dim)' }}>POSITION / ROLE</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editForm.role}
+                                                        onChange={e => setEditForm({ ...editForm, role: e.target.value })}
+                                                        style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--accent-cyan)', color: '#fff', padding: '8px', fontSize: '0.8rem' }}
+                                                    />
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                                    <div>
+                                                        <label className="hud-text" style={{ fontSize: '0.55rem', color: 'var(--text-dim)' }}>UNIT</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editForm.workingUnit}
+                                                            onChange={e => setEditForm({ ...editForm, workingUnit: e.target.value })}
+                                                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--accent-cyan)', color: '#fff', padding: '8px', fontSize: '0.8rem' }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="hud-text" style={{ fontSize: '0.55rem', color: 'var(--text-dim)' }}>SUBDIRECTORATE</label>
+                                                        <select
+                                                            value={editForm.subdirectorate}
+                                                            onChange={e => setEditForm({ ...editForm, subdirectorate: e.target.value })}
+                                                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--accent-cyan)', color: '#fff', padding: '8px', fontSize: '0.8rem' }}
+                                                        >
+                                                            <option>Operations</option>
+                                                            <option>Airworthiness</option>
+                                                            <option>Engineering</option>
+                                                            <option>Security</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
+                                                {/* MANDATORY - CURRENT */}
+                                                <div style={{ marginBottom: '20px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                                        <h5 className="hud-text" style={{ fontSize: '0.6rem', color: 'var(--accent-emerald)' }}>[ MANDATORY: CURRENT ]</h5>
+                                                        <button onClick={() => addRecord('mandatory', 'current')} style={{ background: 'none', border: '1px solid var(--accent-emerald)', color: 'var(--accent-emerald)', fontSize: '0.5rem', padding: '2px 5px' }}>+ ADD</button>
+                                                    </div>
+                                                    {editForm.trainingLog.mandatory.current.map((rec, idx) => (
+                                                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 30px', gap: '5px', marginBottom: '5px' }}>
+                                                            <input value={rec.code} onChange={e => updateRecord('mandatory', idx, 'code', e.target.value, 'current')} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', padding: '4px' }} placeholder="CODE" />
+                                                            <input value={rec.name} onChange={e => updateRecord('mandatory', idx, 'name', e.target.value, 'current')} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', padding: '4px' }} placeholder="COURSE NAME" />
+                                                            <input value={rec.expired} onChange={e => updateRecord('mandatory', idx, 'expired', e.target.value, 'current')} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', padding: '4px' }} placeholder="EXPIRY" />
+                                                            <button onClick={() => removeRecord('mandatory', idx, 'current')} style={{ background: 'none', border: 'none', color: 'var(--accent-red)' }}><Trash2 size={12} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* MANDATORY - OUTSTANDING */}
+                                                <div style={{ marginBottom: '20px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                                        <h5 className="hud-text" style={{ fontSize: '0.6rem', color: 'var(--accent-red)' }}>[ MANDATORY: OUTSTANDING ]</h5>
+                                                        <button onClick={() => addRecord('mandatory', 'outstanding')} style={{ background: 'none', border: '1px solid var(--accent-red)', color: 'var(--accent-red)', fontSize: '0.5rem', padding: '2px 5px' }}>+ ADD</button>
+                                                    </div>
+                                                    {editForm.trainingLog.mandatory.outstanding.map((rec, idx) => (
+                                                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 30px', gap: '5px', marginBottom: '5px' }}>
+                                                            <input value={rec.fcnCode} onChange={e => updateRecord('mandatory', idx, 'fcnCode', e.target.value, 'outstanding')} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', padding: '4px' }} placeholder="CODE" />
+                                                            <input value={rec.fcnName} onChange={e => updateRecord('mandatory', idx, 'fcnName', e.target.value, 'outstanding')} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', padding: '4px' }} placeholder="COURSE NAME" />
+                                                            <input value={rec.lastDueDate} onChange={e => updateRecord('mandatory', idx, 'lastDueDate', e.target.value, 'outstanding')} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', padding: '4px' }} placeholder="DUE DATE" />
+                                                            <button onClick={() => removeRecord('mandatory', idx, 'outstanding')} style={{ background: 'none', border: 'none', color: 'var(--accent-red)' }}><Trash2 size={12} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* NON-MANDATORY */}
+                                                <div style={{ marginBottom: '20px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                                        <h5 className="hud-text" style={{ fontSize: '0.6rem', color: 'var(--accent-cyan)' }}>[ NON-MANDATORY RECORD ]</h5>
+                                                        <button onClick={() => addRecord('nonMandatory')} style={{ background: 'none', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)', fontSize: '0.5rem', padding: '2px 5px' }}>+ ADD</button>
+                                                    </div>
+                                                    {editForm.trainingLog.nonMandatory.map((rec, idx) => (
+                                                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 30px', gap: '5px', marginBottom: '5px' }}>
+                                                            <input value={rec.name} onChange={e => updateRecord('nonMandatory', idx, 'name', e.target.value)} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', padding: '4px' }} placeholder="COURSE NAME" />
+                                                            <input value={rec.date} onChange={e => updateRecord('nonMandatory', idx, 'date', e.target.value)} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.7rem', padding: '4px' }} placeholder="DATE" />
+                                                            <button onClick={() => removeRecord('nonMandatory', idx)} style={{ background: 'none', border: 'none', color: 'var(--accent-red)' }}><Trash2 size={12} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                            <button onClick={handleSave} style={{ flex: 1, background: 'var(--accent-cyan)', color: '#000', border: 'none', padding: '12px', fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                <Save size={16} /> SAVE CHANGES
+                                            </button>
+                                            <button onClick={() => setEditingId(null)} style={{ flex: 1, background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', padding: '12px', fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                <X size={16} /> ABORT EXIT
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                                        <div style={{ position: 'relative' }}>
+                                            <img src={inspector.avatar} style={{ width: '60px', height: '60px', border: '1px solid var(--accent-cyan)', filter: 'grayscale(0.5)' }} />
+                                            <div className="rivet" style={{ top: '2px', left: '2px' }} />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <p className="hud-text" style={{ fontSize: '0.5rem', opacity: 0.6 }}>REG-ID: {inspector.id}</p>
+                                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>{inspector.name}</h4>
+                                            <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                                                <span style={{ fontSize: '0.6rem', color: 'var(--accent-amber)', background: 'rgba(255, 191, 0, 0.1)', padding: '2px 6px' }}>{inspector.role}</span>
+                                                <span style={{ fontSize: '0.6rem', color: 'var(--accent-cyan)', background: 'rgba(0, 212, 255, 0.1)', padding: '2px 6px' }}>{inspector.subdirectorate}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <button onClick={() => handleEdit(inspector)} style={{ background: 'var(--accent-cyan)', border: 'none', color: '#000', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 700, fontSize: '0.7rem' }}>
+                                                <Edit3 size={14} /> EDIT RECORD
+                                            </button>
+                                            <button onClick={() => handleDeleteAttempt(inspector)} style={{ background: 'transparent', border: '1px solid var(--accent-red)', color: 'var(--accent-red)', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 700, fontSize: '0.7rem' }}>
+                                                <Trash2 size={14} /> PURGE
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {view === 'validation' && (
+                <div className="glass-card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h2 className="hud-text" style={{ fontSize: '0.9rem', color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Clock size={18} /> PENDING VALIDATION QUEUE
+                        </h2>
+                        <p className="hud-text" style={{ fontSize: '0.6rem' }}>TOTAL PENDING: {pendingSubmissions.length}</p>
+                    </div>
+
+                    {pendingSubmissions.length === 0 ? (
+                        <div style={{ padding: '4rem', textAlign: 'center', opacity: 0.5 }}>
+                            <ShieldAlert size={48} style={{ marginBottom: '1rem' }} />
+                            <p className="hud-text">ALL CLEAR. NO PENDING CLEARANCE REQUESTS.</p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {pendingSubmissions.map(sub => (
+                                <div key={sub.id} className="technical-border" style={{ padding: '20px', background: 'rgba(255, 191, 0, 0.05)', borderLeft: '4px solid var(--accent-amber)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '30px', alignItems: 'center' }}>
+                                        <div>
+                                            <p className="hud-text" style={{ fontSize: '0.5rem', marginBottom: '4px' }}>ORIGINATOR</p>
+                                            <h4 style={{ fontSize: '1rem', fontWeight: 800 }}>{sub.inspectorName}</h4>
+                                            <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>ID: {sub.inspectorId}</p>
+                                        </div>
+                                        <div>
+                                            <div style={{ display: 'flex', gap: '20px' }}>
+                                                <div>
+                                                    <p className="hud-text" style={{ fontSize: '0.5rem', marginBottom: '4px' }}>COURSE NAME</p>
+                                                    <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{sub.courseName.toUpperCase()}</p>
+                                                    <p className="hud-text" style={{ fontSize: '0.6rem', color: 'var(--accent-cyan)' }}>CODE: {sub.code || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="hud-text" style={{ fontSize: '0.5rem', marginBottom: '4px' }}>DETAILS</p>
+                                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)' }}>{sub.type}</span>
+                                                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)' }}>{sub.trainingDate}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                            <button
+                                                onClick={() => onApprove(sub.id)}
+                                                style={{
+                                                    background: 'var(--accent-emerald)',
+                                                    border: 'none',
+                                                    padding: '10px 20px',
+                                                    color: '#000',
+                                                    fontWeight: 900,
+                                                    fontSize: '0.7rem',
+                                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <Check size={16} /> APPROVE
+                                            </button>
+                                            <button
+                                                onClick={() => onReject(sub.id)}
+                                                style={{
+                                                    background: 'rgba(255, 51, 51, 0.2)',
+                                                    border: '1px solid var(--accent-red)',
+                                                    padding: '10px 20px',
+                                                    color: 'var(--accent-red)',
+                                                    fontWeight: 900,
+                                                    fontSize: '0.7rem',
+                                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <XCircle size={16} /> REJECT
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {view === 'requirements' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div className="glass-card" style={{ padding: '1.5rem' }}>
+                        <h2 className="hud-text" style={{ fontSize: '0.9rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <ShieldAlert size={18} color="var(--accent-amber)" /> Mandatory Requirement Template
+                        </h2>
+                        <div className="technical-border" style={{ padding: '20px', textAlign: 'center', borderStyle: 'dashed' }}>
+                            <Database size={32} color="var(--accent-cyan)" style={{ marginBottom: '15px', opacity: 0.5 }} />
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '15px' }}>GLOBAL REQUIREMENTS CONFIGURATION</p>
+                            <button className="hud-text" style={{ padding: '10px 20px', background: 'transparent', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)', fontSize: '0.65rem' }}>
+                                MODIFY GLOBAL REQU-SET
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="glass-card" style={{ padding: '1.5rem' }}>
+                        <h2 className="hud-text" style={{ fontSize: '0.9rem', marginBottom: '1.5rem' }}>Validation Protocol</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div className="technical-border" style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem' }}>AUTO-EXPIRY DETECTION</span>
+                                <span className="hud-text" style={{ fontSize: '0.6rem', color: 'var(--accent-emerald)' }}>ENABLED</span>
+                            </div>
+                            <div className="technical-border" style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem' }}>MANUAL OVERRIDE LOGGING</span>
+                                <span className="hud-text" style={{ fontSize: '0.6rem', color: 'var(--accent-emerald)' }}>ENABLED</span>
+                            </div>
+                            <div className="technical-border" style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem' }}>PERSONNEL AUTH SYNC</span>
+                                <span className="hud-text" style={{ fontSize: '0.6rem', color: 'var(--accent-amber)' }}>PENDING</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </motion.div>
+    )
+}
+
+export default AdminModule

@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700;800&display=swap');
+
+:root {
+  --bg-color: #05070a;
+  --surface-color: rgba(13, 15, 20, 0.7);
+  --surface-border: rgba(0, 212, 255, 0.15);
+  --accent-amber: #ffaa00;
+  --accent-cyan: #00d4ff;
+  --accent-emerald: #00ff9d;
+  --accent-red: #ff3333;
+  --text-primary: #e0faff;
+  --text-secondary: #88a0b0;
+  --text-dim: #445a6a;
+  --font-main: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --glass-blur: blur(20px);
+  --glow-cyan: 0 0 15px rgba(0, 212, 255, 0.4);
+  --glow-amber: 0 0 15px rgba(255, 170, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  background-image:
+    radial-gradient(circle at 2px 2px, rgba(0, 212, 255, 0.05) 1px, transparent 0),
+    linear-gradient(rgba(0, 212, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px, 100px 100px, 100px 100px;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  overflow-x: hidden;
+  height: 100vh;
+}
+
+/* CRT Scanline Overlay */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 9999;
+  background-size: 100% 4px, 3px 100%;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Flicker effect */
+@keyframes flicker {
+  0% {
+    opacity: 0.97;
+  }
+
+  5% {
+    opacity: 0.95;
+  }
+
+  10% {
+    opacity: 0.9;
+  }
+
+  15% {
+    opacity: 0.95;
+  }
+
+  25% {
+    opacity: 0.98;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+#root {
+  animation: flicker 0.1s infinite;
+}
+
+.glass {
+  background: var(--surface-color);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--surface-border);
+  box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(20, 24, 30, 0.6);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--surface-border);
+  border-left: 4px solid var(--accent-cyan);
+  position: relative;
+}
+
+.glass-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 15px;
+  height: 15px;
+  background: linear-gradient(45deg, transparent 50%, var(--surface-border) 50%);
+}
+
+.hud-text {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent-cyan);
+  text-shadow: var(--glow-cyan);
+}
+
+.technical-border {
+  border: 1px solid var(--surface-border);
+  position: relative;
+  padding: 10px;
+}
+
+.technical-border::before,
+.technical-border::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--accent-cyan);
+  border-style: solid;
+}
+
+.technical-border::before {
+  top: -2px;
+  left: -2px;
+  border-width: 2px 0 0 2px;
+}
+
+.technical-border::after {
+  bottom: -2px;
+  right: -2px;
+  border-width: 0 2px 2px 0;
+}
+
+.rivet {
+  width: 4px;
+  height: 4px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.5);
+  position: absolute;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.badge-formal {
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.badge-ojt {
+  background: rgba(255, 170, 0, 0.1);
+  color: var(--accent-amber);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+}
+
+.badge-success {
+  background: rgba(0, 255, 157, 0.1);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(0, 255, 157, 0.3);
+}
