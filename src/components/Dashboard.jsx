@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { Activity, BookOpen, CheckCircle, Clock, Target, ShieldCheck, ShieldAlert } from 'lucide-react'
 import Gauge from './Gauge'
 
-function Dashboard({ inspectors, onSelectInspector }) {
+function Dashboard({ inspectors, onSelectInspector, pendingCount = 0 }) {
     const totalInspectors = inspectors.length
     const avgFormal = totalInspectors > 0
         ? Math.round(inspectors.reduce((acc, curr) => acc + curr.stats.formal, 0) / totalInspectors)
@@ -34,7 +34,7 @@ function Dashboard({ inspectors, onSelectInspector }) {
     const stats = [
         { label: 'Personnel Active', value: totalInspectors < 10 ? `0${totalInspectors}` : totalInspectors, icon: Activity, color: 'var(--accent-cyan)' },
         { label: 'Action Required', value: outdatedCount < 10 ? `0${outdatedCount}` : outdatedCount, icon: ShieldAlert, color: 'var(--accent-red)', alert: outdatedCount > 0 },
-        { label: 'Pending Approvals', value: '04', icon: Clock, color: 'var(--accent-red)' },
+        { label: 'Pending Approvals', value: pendingCount < 10 ? `0${pendingCount}` : pendingCount, icon: Clock, color: 'var(--accent-red)' },
     ]
 
     return (

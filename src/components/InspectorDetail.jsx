@@ -12,14 +12,31 @@ import {
     Zap,
     AlertCircle,
     ClipboardCheck,
-    Upload
+    Upload,
+    Edit3
 } from 'lucide-react'
 import { exportInspectorPDF } from '../utils/ExportService'
 
-function InspectorDetail({ inspector, onBack }) {
+import TrainingRecordModal from './TrainingRecordModal'
+
+function InspectorDetail({ inspector, onBack, onSaveInspector }) { // Ensure onSaveInspector is passed from parent if available, or we use a prop?
+    // Actually, App.jsx probably needs to pass the update handler or we expect InspectorDetail to receive it.
+    // Looking at App.jsx, it passes 'inspector' and 'onBack'. We likely need to update App.jsx too.
     const [activeTab, setActiveTab] = useState('mandatory')
+    const [isEditing, setIsEditing] = useState(false)
 
     if (!inspector) return null
+
+    const handleSaveRecords = (updatedInspector) => {
+        // Call parent handler to update state/DB
+        // We assume onSaveInspector is passed now, or we might need to modify App.jsx first/concurrently
+        if (onSaveInspector) {
+            onSaveInspector(updatedInspector)
+        } else {
+            console.warn("No onSaveInspector handler provided to InspectorDetail")
+        }
+        setIsEditing(false)
+    }
 
     const navItems = [
         { id: 'mandatory', label: 'Mandatory Course Training Record', icon: GraduationCap },
@@ -37,25 +54,53 @@ function InspectorDetail({ inspector, onBack }) {
             transition={{ duration: 0.4 }}
             style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
         >
+            <TrainingRecordModal
+                isOpen={isEditing}
+                onClose={() => setIsEditing(false)}
+                inspector={inspector}
+                onSave={handleSaveRecords}
+            />
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <button
-                    onClick={onBack}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        background: 'rgba(0, 212, 255, 0.05)',
-                        border: '1px solid var(--surface-border)',
-                        color: 'var(--accent-cyan)',
-                        cursor: 'pointer',
-                        padding: '6px 12px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        fontFamily: 'var(--font-mono)'
-                    }}
-                >
-                    <ArrowLeft size={14} /> BACK TO DATABASE
-                </button>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                    <button
+                        onClick={onBack}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'rgba(0, 212, 255, 0.05)',
+                            border: '1px solid var(--surface-border)',
+                            color: 'var(--accent-cyan)',
+                            cursor: 'pointer',
+                            padding: '6px 12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-mono)'
+                        }}
+                    >
+                        <ArrowLeft size={14} /> BACK TO DATABASE
+                    </button>
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'var(--accent-cyan)',
+                            border: 'none',
+                            color: '#000',
+                            cursor: 'pointer',
+                            padding: '6px 12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            fontFamily: 'var(--font-mono)',
+                            boxShadow: '0 0 10px rgba(0, 212, 255, 0.3)'
+                        }}
+                    >
+                        <Edit3 size={14} /> MANAGE RECORDS
+                    </button>
+                </div>
                 <h1 className="hud-text" style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>
                     [ INSPECTOR TRAINING RECORD // ID: {inspector.id} ]
                 </h1>

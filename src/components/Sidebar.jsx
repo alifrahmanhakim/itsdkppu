@@ -1,8 +1,8 @@
 import React from 'react'
-import { Layout, Users, BarChart3, Settings, Plane, Shield, Radio, Activity, Terminal, BookOpen } from 'lucide-react'
+import { Layout, Users, BarChart3, Settings, Plane, Shield, Radio, Activity, Terminal, BookOpen, LogOut } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-function Sidebar({ activeTab, setActiveTab, pendingCount }) {
+function Sidebar({ activeTab, setActiveTab, pendingCount, onLogout, currentUser }) {
     const menuItems = [
         { id: 'dashboard', icon: BarChart3, label: 'COMMAND-DASH' },
         { id: 'inspectors', icon: Users, label: 'FLIGHT-PERSONNEL' },
@@ -129,6 +129,71 @@ function Sidebar({ activeTab, setActiveTab, pendingCount }) {
                         transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                         style={{ position: 'absolute', width: '20px', height: '100%', background: 'var(--accent-cyan)', boxShadow: '0 0 10px var(--accent-cyan)' }}
                     />
+                </div>
+            </div>
+
+            {/* User Profile & Logout */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--surface-border)', paddingTop: '1rem' }}>
+                {/* User Profile & Logout - Identity Card Style */}
+                <div style={{ marginTop: '1rem', borderTop: '1px solid var(--surface-border)', paddingTop: '1rem' }}>
+                    <div className="glass-card" style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                            {/* Avatar Frame */}
+                            <div style={{ position: 'relative' }}>
+                                <div style={{
+                                    width: '40px', height: '40px',
+                                    borderRadius: '50%',
+                                    overflow: 'hidden',
+                                    border: '2px solid var(--accent-cyan)',
+                                    boxShadow: '0 0 10px rgba(0, 212, 255, 0.3)'
+                                }}>
+                                    {currentUser?.photoURL ? (
+                                        <img src={currentUser.photoURL} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <div style={{ width: '100%', height: '100%', background: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 'bold' }}>
+                                            {currentUser?.email?.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
+                                {/* Status Indicator */}
+                                <div style={{
+                                    position: 'absolute', bottom: '0', right: '0',
+                                    width: '10px', height: '10px',
+                                    background: '#10b981',
+                                    borderRadius: '50%',
+                                    border: '2px solid #000'
+                                }}></div>
+                            </div>
+
+                            {/* User Info */}
+                            <div style={{ overflow: 'hidden' }}>
+                                <h4 style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase()}
+                                </h4>
+                                <p className="hud-text" style={{ fontSize: '0.6rem', color: 'var(--accent-amber)' }}>SYSTEM COMMANDER</p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={onLogout}
+                            style={{
+                                width: '100%',
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                background: 'rgba(255, 51, 51, 0.15)',
+                                border: '1px solid var(--accent-red)',
+                                color: 'var(--accent-red)',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
+                                justifyContent: 'center',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            <LogOut size={12} /> TERMINATE UPLINK
+                        </button>
+                    </div>
                 </div>
             </div>
         </aside>

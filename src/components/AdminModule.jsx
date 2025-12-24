@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     Plus, Trash2, Edit3, Save, X, UserPlus, Database,
     AlertTriangle, ShieldAlert, Check, XCircle, Clock,
-    FileText, Award, Layers, BookOpen, Trash
+    FileText, Award, Layers, BookOpen, Trash, FileSpreadsheet
 } from 'lucide-react'
 import ConfirmationModal from './ConfirmationModal'
+import BulkImportModal from './BulkImportModal'
+import { deleteAllInspectors } from '../services/firebaseService'
 
-function AdminModule({ inspectors, onUpdateInspectors, pendingSubmissions, onApprove, onReject }) {
+function AdminModule({ inspectors = [], onUpdateInspectors, pendingSubmissions = [], onApprove, onReject }) {
     const [editingId, setEditingId] = useState(null)
     const [editForm, setEditForm] = useState(null)
     const [view, setView] = useState('personnel') // personnel, requirements, validation
@@ -20,6 +22,9 @@ function AdminModule({ inspectors, onUpdateInspectors, pendingSubmissions, onApp
         nameToDelete: '',
         onConfirm: null
     })
+
+    // Bulk Import State
+    const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
     const handleEdit = (inspector) => {
         setEditingId(inspector.id)
@@ -45,6 +50,19 @@ function AdminModule({ inspectors, onUpdateInspectors, pendingSubmissions, onApp
                 setConfirmState({ ...confirmState, isOpen: false })
             }
         })
+    }
+
+    const handleDeleteAll = async () => {
+        if (window.confirm("CRITICAL WARNING: This will DELETE ALL inspectors from the database. This action CANNOT be undone. Are you sure?")) {
+            try {
+                await deleteAllInspectors();
+                onUpdateInspectors([]); // Clear local state
+                alert("Database has been reset. All records deleted.");
+            } catch (error) {
+                console.error("Failed to delete all:", error);
+                alert("Failed to reset database: " + error.message);
+            }
+        }
     }
 
     const handleAddPersonnel = () => {
@@ -103,6 +121,19 @@ function AdminModule({ inspectors, onUpdateInspectors, pendingSubmissions, onApp
         }
         setEditForm(newForm)
     }
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 20;
+
+    // Filter Logic (if needed later, ensuring we paginate the *filtered* list)
+    // For now, using inspectors prop directly
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentInspectors = inspectors.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(inspectors.length / itemsPerPage);
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     return (
         <motion.div
@@ -180,27 +211,58 @@ function AdminModule({ inspectors, onUpdateInspectors, pendingSubmissions, onApp
             {view === 'personnel' && (
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h2 className="hud-text" style={{ fontSize: '0.9rem' }}>Personnel Registry Database</h2>
-                        <button
-                            onClick={handleAddPersonnel}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                background: 'var(--accent-emerald)',
-                                border: 'none',
-                                padding: '8px 16px',
-                                color: '#000',
-                                fontWeight: 800,
-                                fontSize: '0.7rem'
-                            }}
-                        >
-                            <UserPlus size={16} /> ADD NEW PERSONNEL
-                        </button>
+                        <h2 className="hud-text" style={{ fontSize: '0.9rem' }}>Personnel Registry Database ({inspectors.length} Total)</h2>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                onClick={() => setBulkImportOpen(true)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    background: 'transparent', border: '1px solid var(--accent-emerald)',
+                                    padding: '8px 16px', color: 'var(--accent-emerald)',
+                                    fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer'
+                                }}
+                            >
+                                <FileSpreadsheet size={16} /> IMPORT EXCEL
+                            </button>
+                            <button
+                                onClick={handleDeleteAll}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: 'rgba(255, 51, 51, 0.1)',
+                                    border: '1px solid var(--accent-red)',
+                                    color: 'var(--accent-red)',
+                                    padding: '10px 16px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                <Trash2 size={16} /> RESET DATABASE
+                            </button>
+                            <button
+                                onClick={handleAddPersonnel}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: 'var(--accent-emerald)',
+                                    border: 'none',
+                                    padding: '8px 16px',
+                                    color: '#000',
+                                    fontWeight: 800,
+                                    fontSize: '0.7rem'
+                                }}
+                            >
+                                <UserPlus size={16} /> ADD NEW PERSONNEL
+                            </button>
+                        </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '20px' }}>
-                        {inspectors.map(inspector => (
+                        {currentInspectors.map(inspector => (
                             <div key={inspector.id} className="technical-border" style={{ padding: '15px', position: 'relative', background: editingId === inspector.id ? 'rgba(0, 212, 255, 0.05)' : 'transparent' }}>
                                 {editingId === inspector.id && (
                                     <div style={{
@@ -413,6 +475,39 @@ function AdminModule({ inspectors, onUpdateInspectors, pendingSubmissions, onApp
                             </div>
                         ))}
                     </div>
+
+                    {/* Pagination Controls */}
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginTop: '30px' }}>
+                        <button
+                            onClick={() => paginate(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            style={{
+                                background: 'transparent',
+                                border: '1px solid var(--accent-cyan)',
+                                color: 'var(--accent-cyan)',
+                                padding: '8px 20px',
+                                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                opacity: currentPage === 1 ? 0.5 : 1
+                            }}
+                        >
+                            PREV
+                        </button>
+                        <span className="hud-text" style={{ fontSize: '0.8rem' }}>PAGE {currentPage} OF {totalPages}</span>
+                        <button
+                            onClick={() => paginate(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            style={{
+                                background: 'transparent',
+                                border: '1px solid var(--accent-cyan)',
+                                color: 'var(--accent-cyan)',
+                                padding: '8px 20px',
+                                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                opacity: currentPage === totalPages ? 0.5 : 1
+                            }}
+                        >
+                            NEXT
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -530,6 +625,15 @@ function AdminModule({ inspectors, onUpdateInspectors, pendingSubmissions, onApp
                     </div>
                 </div>
             )}
+
+            <BulkImportModal
+                isOpen={bulkImportOpen}
+                onClose={() => setBulkImportOpen(false)}
+                onSuccess={() => {
+                    // Trigger a refresh indirectly or notify user
+                    alert("Import Successful! Please refresh to see new data.");
+                }}
+            />
         </motion.div>
     )
 }

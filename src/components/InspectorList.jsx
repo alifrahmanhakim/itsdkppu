@@ -88,75 +88,95 @@ function InspectorList({ inspectors, onSelectInspector }) {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '30px' }}>
-                <AnimatePresence>
-                    {filteredInspectors.map((inspector) => (
-                        <motion.div
-                            key={inspector.id}
-                            layout
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            whileHover={{ scale: 1.02 }}
-                            onClick={() => onSelectInspector(inspector)}
-                            className="glass-card"
-                            style={{ padding: '0', cursor: 'pointer', overflow: 'hidden', borderLeft: '4px solid var(--accent-cyan)' }}
-                        >
-                            <div style={{ padding: '1.5rem', background: 'rgba(0, 212, 255, 0.03)', borderBottom: '1px solid var(--surface-border)' }}>
-                                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                                    <div style={{ position: 'relative' }}>
-                                        <img src={inspector.avatar} alt="" style={{ width: '80px', height: '80px', border: '1px solid var(--accent-cyan)', filter: 'grayscale(0.5)' }} />
-                                        <div className="rivet" style={{ top: '2px', left: '2px' }} />
-                                        <div className="rivet" style={{ top: '2px', right: '2px' }} />
-                                        <div className="rivet" style={{ bottom: '2px', left: '2px' }} />
-                                        <div className="rivet" style={{ bottom: '2px', right: '2px' }} />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <p className="hud-text" style={{ fontSize: '0.55rem', opacity: 0.6 }}>ID: {inspector.id}</p>
-                                        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>{inspector.name}</h3>
-                                        <p className="hud-text" style={{ fontSize: '0.65rem', color: 'var(--accent-amber)' }}>{inspector.role}</p>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div style={{ padding: '1.5rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                    <div>
-                                        <p className="hud-text" style={{ fontSize: '0.5rem', marginBottom: '4px' }}>Division</p>
-                                        <p style={{ fontSize: '0.8rem', fontWeight: 700 }}>{inspector.subdirectorate.toUpperCase()}</p>
+            {
+                filteredInspectors.length === 0 ? (
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '60px',
+                        border: '1px dashed var(--surface-border)',
+                        borderRadius: '8px',
+                        background: 'rgba(255,255,255,0.02)'
+                    }}>
+                        <User size={48} color="var(--text-dim)" style={{ marginBottom: '20px', opacity: 0.5 }} />
+                        <h3 style={{ color: 'var(--text-secondary)', marginBottom: '10px' }}>NO PERSONNEL DATA FOUND</h3>
+                        <p className="hud-text" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                            DATABASE IS EMPTY OR SEARCH RETURNED NO RESULTS. <br />
+                            PLEASE IMPORT DATA VIA ADMIN MODULE.
+                        </p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '30px' }}>
+                        <AnimatePresence>
+                            {filteredInspectors.map((inspector) => (
+                                <motion.div
+                                    key={inspector.id}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    whileHover={{ scale: 1.02 }}
+                                    onClick={() => onSelectInspector(inspector)}
+                                    className="glass-card"
+                                    style={{ padding: '0', cursor: 'pointer', overflow: 'hidden', borderLeft: '4px solid var(--accent-cyan)' }}
+                                >
+                                    <div style={{ padding: '1.5rem', background: 'rgba(0, 212, 255, 0.03)', borderBottom: '1px solid var(--surface-border)' }}>
+                                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                                            <div style={{ position: 'relative' }}>
+                                                <img src={inspector.avatar} alt="" style={{ width: '80px', height: '80px', border: '1px solid var(--accent-cyan)', filter: 'grayscale(0.5)' }} />
+                                                <div className="rivet" style={{ top: '2px', left: '2px' }} />
+                                                <div className="rivet" style={{ top: '2px', right: '2px' }} />
+                                                <div className="rivet" style={{ bottom: '2px', left: '2px' }} />
+                                                <div className="rivet" style={{ bottom: '2px', right: '2px' }} />
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <p className="hud-text" style={{ fontSize: '0.55rem', opacity: 0.6 }}>ID: {inspector.id}</p>
+                                                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>{inspector.name}</h3>
+                                                <p className="hud-text" style={{ fontSize: '0.65rem', color: 'var(--accent-amber)' }}>{inspector.role}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <p className="hud-text" style={{ fontSize: '0.5rem', marginBottom: '4px' }}>Status</p>
-                                        <p className="hud-text" style={{ fontSize: '0.8rem', color: 'var(--accent-emerald)' }}>ACTIVE</p>
-                                    </div>
-                                </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                            <span className="hud-text" style={{ fontSize: '0.55rem' }}>Formal</span>
-                                            <span className="hud-text" style={{ fontSize: '0.55rem' }}>{inspector.stats.formal}%</span>
+                                    <div style={{ padding: '1.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                            <div>
+                                                <p className="hud-text" style={{ fontSize: '0.5rem', marginBottom: '4px' }}>Division</p>
+                                                <p style={{ fontSize: '0.8rem', fontWeight: 700 }}>{inspector.subdirectorate.toUpperCase()}</p>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <p className="hud-text" style={{ fontSize: '0.5rem', marginBottom: '4px' }}>Status</p>
+                                                <p className="hud-text" style={{ fontSize: '0.8rem', color: 'var(--accent-emerald)' }}>ACTIVE</p>
+                                            </div>
                                         </div>
-                                        <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', position: 'relative' }}>
-                                            <div style={{ width: `${inspector.stats.formal}%`, height: '100%', background: 'var(--accent-cyan)', boxShadow: '0 0 8px var(--accent-cyan)' }} />
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                                    <span className="hud-text" style={{ fontSize: '0.55rem' }}>Formal</span>
+                                                    <span className="hud-text" style={{ fontSize: '0.55rem' }}>{inspector.stats.formal}%</span>
+                                                </div>
+                                                <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', position: 'relative' }}>
+                                                    <div style={{ width: `${inspector.stats.formal}%`, height: '100%', background: 'var(--accent-cyan)', boxShadow: '0 0 8px var(--accent-cyan)' }} />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                                    <span className="hud-text" style={{ fontSize: '0.55rem' }}>Field OJT</span>
+                                                    <span className="hud-text" style={{ fontSize: '0.55rem' }}>{inspector.stats.ojt}%</span>
+                                                </div>
+                                                <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', position: 'relative' }}>
+                                                    <div style={{ width: `${inspector.stats.ojt}%`, height: '100%', background: 'var(--accent-amber)', boxShadow: '0 0 8px var(--accent-amber)' }} />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                            <span className="hud-text" style={{ fontSize: '0.55rem' }}>Field OJT</span>
-                                            <span className="hud-text" style={{ fontSize: '0.55rem' }}>{inspector.stats.ojt}%</span>
-                                        </div>
-                                        <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', position: 'relative' }}>
-                                            <div style={{ width: `${inspector.stats.ojt}%`, height: '100%', background: 'var(--accent-amber)', boxShadow: '0 0 8px var(--accent-amber)' }} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
-        </motion.div>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </div>
+                )
+            }
+        </motion.div >
     )
 }
 
